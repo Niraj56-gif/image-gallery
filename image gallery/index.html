@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Modern Image Gallery</title>
+<style>
+ /* Reset and base */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #171313;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  h1 {
+    text-align: center;
+    padding: 1rem;
+    font-weight: 700;
+    color: #00bfa6;
+    text-shadow: 0 0 8px #00bfa6;
+  }
+  /* Gallery container with grid */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+    gap: 12px;
+    padding: 12px;
+    max-width: 1100px;
+    margin: 0 auto 2rem auto;
+  }
+  .gallery-item {
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow:
+        0 0 8px rgba(0,0,0,0.15),
+        inset 0 0 12px rgba(255,255,255,0.1);
+    transition: transform 0.3s ease;
+  }
+  .gallery-item:hover {
+    transform: scale(1.05);
+    box-shadow:
+        0 0 15px #00bfa6,
+        inset 0 0 20px #00bfa6;
+  }
+  .gallery-item img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+    border-radius: 8px;
+    transition: opacity 0.3s ease;
+  }
+  /* Modal overlay */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(18,18,18,0.95);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    overflow: hidden;
+  }
+  .modal.open {
+    display: flex;
+  }
+  /* Modal content */
+  .modal-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 12px;
+    box-shadow: 0 0 30px #00bfa6;
+    overflow: hidden;
+    background: #222;
+  }
+  .modal-content img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    border-radius: 12px;
+    user-select: none;
+  }
+  /* Modal navigation buttons */
+  .nav-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,191,166,0.8);
+    border: none;
+    padding: 12px 16px;
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s ease;
+    box-shadow: 0 0 8px #00bfa6;
+  }
+  .nav-button:hover {
+    background: #00bfa6;
+  }
+  .nav-prev {
+    left: 12px;
+  }
+  .nav-next {
+    right: 12px;
+  }
+  /* Close button */
+  .close-button {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0,191,166,0.8);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s ease;
+    box-shadow: 0 0 8px #00bfa6;
+  }
+  .close-button:hover {
+    background: #00bfa6;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 600px) {
+    .gallery-item img {
+      height: 120px;
+    }
+    .nav-button {
+      font-size: 20px;
+      padding: 10px 14px;
+    }
+    .close-button {
+      font-size: 16px;
+      padding: 6px 10px;
+    }
+  }
+</style>
+</head></style>
+ 
+<body>
+  <h1>Modern Image Gallery</h1>
+  <div class="gallery" id="gallery">
+    <!-- Thumbnails will be generated here -->
+  </div>
+
+  <div class="modal" id="modal" aria-hidden="true" role="dialog" aria-label="Image preview">
+    <div class="modal-content">
+      <button class="close-button" id="closeBtn" aria-label="Close modal">&times;</button>
+      <button class="nav-button nav-prev" id="prevBtn" aria-label="Previous image">&#10094;</button>
+      <img src="" alt="" id="modalImage" />
+      <button class="nav-button nav-next" id="nextBtn" aria-label="Next image">&#10095;</button>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // Example images - using unsplash pics with fixed sizes for consistency
+      const images = [
+        { src: 'https://www.nepalsanctuarytreks.com/wp-content/uploads/2018/10/Annapurna_South_from_Gandruk.jpg', alt: 'Mountain Landscape' },
+        { src: 'https://thumbs.dreamstime.com/z/nepalese-dancers-traditional-nepali-attire-kathmandu-nepal-feb-magar-samaj-program-kathmandu-nepal-87777636.jpg', alt: 'nepali dress' },
+        { src: 'https://th.bing.com/th/id/OIP.v_gpVfUkw1880VGAlJXbeAAAAA?rs=1&pid=ImgDetMain', alt: 'Temple' },
+        { src: 'https://travelogyindia.b-cdn.net/blog/wp-content/uploads/2017/07/Pashupatinath-Temple-Nepal.jpg', alt: 'pashupatinath' },
+        { src: 'https://www.holidify.com/images/cmsuploads/compressed/1024px-Janaki_Mandir-Janakpur_Nepal-7499_20181001161304_20181001161326.jpg', alt: 'janaki mandir' },
+        { src: 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=600&q=80', alt: 'Desert Dunes' },
+        { src: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=80', alt: 'Flower Closeup' },
+        { src: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=600&q=80', alt: 'Waterfall' },
+        { src: 'https://images.unsplash.com/photo-1416339306562-f3d12fefd36f?auto=format&fit=crop&w=600&q=80', alt: 'Starry Night' },
+        {src: 'https://www.mirchaiyamun.gov.np/sites/mirchaiyamun.gov.np/files/img/slider/Nature.gif', alt:'mirchaiya' },
+        {src:'https://th.bing.com/th/id/R.4e64d71720e52c5731b6cff4518a7765?rik=g9l6YMKnCAdA1w&pid=ImgRaw&r=0',alt:'map'},
+        {src:'https://th.bing.com/th/id/OIP.FzRzK5jSiJyW-Y5voikkyAAAAA?rs=1&pid=ImgDetMain',alt:'political party'},
+        {src:'https://wallpaperaccess.com/full/166023.jpg',alt: 'mount everest'},
+        {src:'https://i.pinimg.com/originals/06/5f/41/065f41cf43c17f71f10bb6a07ada7f11.jpg',alt:'dharhara'},
+        {src:'https://i.ytimg.com/vi/VgySc5xQt4E/maxresdefault.jpg',alt:'tudikhel'},
+        {src:'https://thumbs.dreamstime.com/b/golden-temple-11229099.jpg',alt:'amritshar'},
+        {src:'https://th.bing.com/th/id/OIP.CpDeprTCu9Zkx5iikTml8wHaEH?w=900&h=500&rs=1&pid=ImgDetMain',alt:'ghandruk'},
+        {src:'https://static.toiimg.com/photo/msid-57788512,width-96,height-65.cms',alt:'fewa lake'},
+        {src:'https://i0.wp.com/sakalam.org/wp-content/uploads/2022/10/Gorkha-Manakamana-Temple-scaled.jpg?fit=2560%2C2482&ssl=1',alt:'manakamana temple'},
+        {src:'https://images.herzindagi.info/image/2022/Jul/kosi-river-why-called-shok-river-in-bihar.jpg'},
+      ];
+
+      const gallery = document.getElementById('gallery');
+      const modal = document.getElementById('modal');
+      const modalImage = document.getElementById('modalImage');
+      const closeBtn = document.getElementById('closeBtn');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+
+      let currentIndex = 0;
+
+      // Generate gallery thumbnails
+      images.forEach((img, i) => {
+        const div = document.createElement('div');
+        div.className = 'gallery-item';
+        div.setAttribute('tabindex', '0');
+        div.setAttribute('aria-label', 'Open image: ' + img.alt);
+        const image = document.createElement('img');
+        image.src = img.src;
+        image.alt = img.alt;
+        div.appendChild(image);
+        gallery.appendChild(div);
+
+        // Click / keyboard event to open modal
+        div.addEventListener('click', () => openModal(i));
+        div.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openModal(i);
+          }
+        });
+      });
+
+      function openModal(index) {
+        currentIndex = index;
+        updateModalImage();
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        closeBtn.focus();
+        document.body.style.overflow = 'hidden'; // Prevent background scroll
+      }
+
+      function closeModal() {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        // Return focus to the thumbnail that opened the modal
+        gallery.children[currentIndex].focus();
+      }
+
+      function updateModalImage() {
+        const img = images[currentIndex];
+        modalImage.src = img.src;
+        modalImage.alt = img.alt;
+      }
+
+      function showNext() {
+        currentIndex = (currentIndex + 1) % images.length;
+        updateModalImage();
+      }
+
+      function showPrev() {
+        currentIndex = (currentIndex - 1 + images.length) % images.length;
+        updateModalImage();
+      }
+
+      // Event listeners
+      closeBtn.addEventListener('click', closeModal);
+      nextBtn.addEventListener('click', showNext);
+      prevBtn.addEventListener('click', showPrev);
+
+      // Keyboard navigation in modal
+      document.addEventListener('keydown', (e) => {
+        if (!modal.classList.contains('open')) return;
+
+        switch(e.key) {
+          case 'ArrowRight':
+            showNext();
+            break;
+          case 'ArrowLeft':
+            showPrev();
+            break;
+          case 'Escape':
+            closeModal();
+            break;
+        }
+      });
+
+      // Clicking outside the modal image closes the modal
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          closeModal();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
